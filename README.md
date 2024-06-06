@@ -1,4 +1,4 @@
-﻿# Wzj_sign
+﻿# 微助教交互式签到
 
 用 Go 实现的针对微助教的自动化签到服务
 
@@ -15,16 +15,36 @@
 - [ ] OpenID 失效提醒
 - [ ] OpenID 自动解析
 
-## 后端技术栈
-
-- Viper
-- Gin
-- Go-Redis
-- WebSocket
-- Docker
-- Jenkins
-
 ## 用法
+
+### 配置文件
+
+```yml
+# 配置一个Redis地址
+redis:
+  address: "localhost:6379"
+  password: "RedisPassword"
+  db: 0
+
+# 服务器参数
+app:
+  # 检测周期间隔
+  interval: 8
+  # 二维码签到检测到后延迟秒数
+  normal_delay: 20
+  # 服务器监听地址
+  url: http://localhost:8080
+
+# 发送邮件反馈
+mail:
+  # 是否启用
+  enabled: true
+  host: smtp.example.com
+  port: 465
+  username: admin@example.com
+  password: MailPassword
+  from: admin@example.com
+```
 
 ### 首页
 
