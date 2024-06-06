@@ -1,0 +1,15 @@
+﻿redis:
+  address: "localhost:6379"
+  password: "RedisPassword"
+  db: 0
+app:
+  interval: 8
+  normal_delay: 20
+  url: http://localhost:8080
+mail:
+  enabled: true
+  host: smtp.example.com
+  port: 465
+  username: admin@example.com
+  password: MailPassword
+  from: admin@example.com

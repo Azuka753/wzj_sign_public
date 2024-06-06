@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>微助教OpenID监控</title>
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap/4.5.3/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">添加到监控池</div>
+            <div class="card-body">
+              <form id="submitForm" class="needs-validation" novalidate>
+                <div class="form-group">
+                  <label for="inputData">输入32位的OpenID:</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="inputData"
+                    name="data"
+                    required
+                  />
+                  <br />
+                  <label for="inputData">你的邮箱:</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="inputEmail"
+                    name="emailData"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  onclick="submitForm()"
+                >
+                  提交（有两小时有效期）
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">服务器状态</div>
+            <div class="card-body">
+              <!-- 按钮 -->
+              <button
+                id="fetchButton"
+                class="btn btn-primary"
+                onclick="getValidOpenId()"
+              >
+                获取正在监控的OpenID
+              </button>
+              <button
+                id="fetchButton"
+                class="btn btn-primary"
+                onclick="getServeInfo()"
+              >
+                获取服务器参数
+              </button>
+              <!-- 列表 -->
+              <ul id="stringList" class="list-group mt-3">
+                <!-- 列表项将通过 JavaScript 动态添加 -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap/4.5.3/js/bootstrap.min.js"></script>
+
+    <script>
+      function submitForm() {
+        // 阻止表单默认提交行为
+        event.preventDefault();
+
+        // 获取输入框的值
+        var dataValue = document.getElementById("inputData").value;
+        var emailValue = document.getElementById("inputEmail").value;
+        // 正则表达式，匹配 32 位小写字母或数字
+        var pattern = /^[a-z0-9]{32}$/;
+        var emailPattern =
+          /[\w!#$ %& '*+/=?^_`{|}~-]+(?:\.[\w!#$%&' * +/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?/;
+        // 进行验证
+        if (!pattern.test(dataValue)) {
+          showTips("请输入32位小写字母或数字");
+          return; // 验证失败，阻止表单提交
+        }
+        if (!emailPattern.test(emailValue)) {
+          showTips("请输入你的邮箱地址，用于获取签到状态");
+          return; // 验证失败，阻止表单提交
+        }
+        // 发送 POST 请求
+        fetch("/register", {
+          method: "POST",
+          body: JSON.stringify({ openId: dataValue, value: emailValue }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            showTips(data.message);
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      function getValidOpenId() {
+        var stringList = document.getElementById("stringList");
+        // 发起 GET 请求
+        fetch("/openids")
+          .then((response) => response.json())
+          .then((data) => {
+            // 清空列表
+            stringList.innerHTML = "";
+
+            // 将每个字符串添加到列表中
+            data.openIds.forEach(function (item) {
+              var listItem = document.createElement("li");
+              listItem.className = "list-group-item";
+              listItem.textContent = item;
+              stringList.appendChild(listItem);
+            });
+            if (data.openIds.length == 0) {
+              showTips("目前没有有效的OpenID在被监控中。");
+            }
+          })
+          .catch((error) => console.error("Error fetching strings:", error));
+      }
+
+      function getServeInfo() {
+        fetch("/serverinfo")
+          .then((response) => response.json())
+          .then((data) => {
+            showTips(
+              "服务器查询间隔：" +
+                data.interval +
+                "秒，普通签到模拟延迟：" +
+                data.delay +
+                "秒"
+            );
+          })
+          .catch((error) => console.error("Error fetching strings:", error));
+      }
+
+      function getServerNotice() {
+        fetch("/notice")
+          .then((response) => response.json())
+          .then((data) => {
+            showTips(data.notice);
+          })
+          .catch((error) => console.error("Error fetching strings:", error));
+      }
+
+      function showTips(msg) {
+        // 弹出模态框显示返回的消息
+        var modal = document.getElementById("myModal");
+        var modalBody = document.getElementById("modalBody");
+        modalBody.innerText = msg;
+        $("#myModal").modal("show");
+      }
+      getServerNotice();
+    </script>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="myModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">提示</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" id="modalBody">
+            <!-- Message content will be displayed here -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              OK!
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

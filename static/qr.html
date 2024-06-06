@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>二维码签到截获</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap/4.5.3/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- jQuery -->
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap/4.5.3/js/bootstrap.min.js"></script>
+    <!-- QR Code Generator JS -->
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+    <style>
+      /* CSS for centering the QR code */
+      .qr-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="text-center mt-5">二维码</h1>
+      <div class="text-center">
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="generateQR(true)"
+        >
+          刷新
+        </button>
+      </div>
+      <div class="text-center">
+        <div id="datetime"></div>
+      </div>
+      <div class="qr-container">
+        <div id="qrcode"></div>
+      </div>
+      <div class="progress" id="progress">
+        <div
+          id="progressBar"
+          class="progress-bar progress-bar-striped bg-info"
+          role="progressbar"
+          style="width: 100%"
+          aria-valuenow="100"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          10s
+        </div>
+      </div>
+      <div class="text-center">
+        <p>
+          使用微信扫一扫扫描上方二维码，扫描完成后之前提交的OpenID会自动过期，如果需要继续监控则要重新提交。
+        </p>
+        <b>每个二维码有10秒钟有效期，本页面不会自动刷新！</b>
+      </div>
+
+      <div class="text-center">
+        <button type="button" class="btn btn-primary" onclick="goBack()">
+          返回主页
+        </button>
+      </div>
+    </div>
+
+    <script>
+      var progress = 100;
+      var oldQR = "";
+      var timer;
+      var timerStop = true;
+      $(document).ready(function () {
+        // 定义一个定时器，每秒执行一次
+        timer = setInterval(generateQR, 1000);
+        timerStop = false;
+
+        // 如果需要停止定时器，可以使用 clearInterval(timer)
+      });
+      function goBack() {
+        window.location = "/home";
+      }
+      function generateQR(isBtn) {
+        var now = new Date(); // 获取当前时间
+        var datetimeString = now.toLocaleString();
+        // 在页面上显示当前日期时间
+        $("#datetime").text(datetimeString);
+        var urlParams = new URLSearchParams(window.location.search);
+        var sign = urlParams.get("sign");
+        var apiUrl = "/qr/" + sign;
+        $.get(apiUrl, function (response) {
+          if (response.qrUrl) {
+            $("#qrcode").html("");
+            $("#qrcode").qrcode({
+              width: 200,
+              height: 200,
+              text: response.qrUrl,
+            });
+            if (!isBtn) {
+              if (response.qrUrl == oldQR) {
+                progress -= 10; // 减少 10% 的进度
+              } else {
+                oldQR = response.qrUrl;
+                progress = 100;
+              }
+              $("#progressBar")
+                .css("width", progress + "%")
+                .attr("aria-valuenow", progress)
+                .text(progress / 10 + "s");
+            } else if (timerStop) {
+              timer = setInterval(generateQR, 1000);
+              timerStop = false;
+            }
+          } else if (isBtn) {
+            alert("二维码签到不存在或已过期至少30秒钟");
+            $("#qrcode").html("");
+          } else {
+            clearInterval(timer);
+            timerStop = true;
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
